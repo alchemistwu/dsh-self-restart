@@ -16,7 +16,10 @@ Verified end-to-end: kill → relaunch → healthy in ~3 seconds.
 ## Usage
 
 The agent calls the `desktop_restart` tool. The call never meaningfully
-returns — the turn dies mid-stream. After the restart:
+returns — the turn dies mid-stream. The plugin records which session asked;
+after the watchdog reports HEALTHY, the next boot **resumes that session and
+wakes it with a followup message**, so the agent continues its post-restart
+verification without a user poke. Status file for manual inspection:
 
 ```bash
 cat /tmp/dsh-self-restart.status
