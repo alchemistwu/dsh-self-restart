@@ -1,7 +1,7 @@
 {
   "name": "dsh-self-restart",
   "version": "0.1.0",
-  "description": "Let the agent restart DSH Desktop itself — detached watchdog survives the teardown, relaunches, verifies health",
+  "description": "Let the agent restart DSH Desktop itself \u2014 detached watchdog survives the teardown, relaunches, verifies health",
   "type": "module",
   "main": "src/index.ts",
   "dsh": {
@@ -12,9 +12,17 @@
   "scripts": {
     "test": "node --experimental-strip-types --test test/*.test.ts"
   },
-  "keywords": ["dsh-plugin", "dsh", "cordis"],
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "cordis"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alchemistwu/dsh-self-restart.git"
   }
 }
