@@ -17,6 +17,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileIntentStore, continueAfterRestart } from './resume-intent.ts'
 
 export interface Config {
   /** Absolute path of the .app bundle to relaunch. */
@@ -28,7 +29,7 @@ export interface Config {
 }
 
 export const name = 'self-restart'
-export const inject = ['tools']
+export const inject = ['tools', 'agents']
 
 const DEFAULTS = {
   appPath: '/Applications/DSH Desktop.app',
@@ -103,6 +104,16 @@ export function apply(ctx: any, config?: Config) {
   const cfg: Required<Config> = { ...DEFAULTS, ...(config ?? {}) }
   const stateDir = join(process.env.HOME ?? '.', '.dsh', 'profiles', 'desktop', 'state', 'self-restart')
   const paths = materialize(stateDir, cfg)
+  const intent = fileIntentStore(stateDir)
+
+  // Boot continuation: if WE restarted and the watchdog confirmed health,
+  // wake the requesting session so the agent resumes its work unpoked.
+  // Deferred: agents/persistence services settle after apply().
+  setTimeout(() => {
+    continueAfterRestart({ agents: ctx.agents, intent, statusFile: cfg.statusFile, logger: (m, ...r) => logger.info(m, ...r) })
+      .then((outcome) => logger.info(`boot continuation: ${outcome}`))
+      .catch((err) => logger.warn('boot continuation failed:', (err as Error).message))
+  }, 4000)
 
   ctx.tools.register({
     name: 'desktop_restart',
@@ -121,8 +132,15 @@ export function apply(ctx: any, config?: Config) {
       },
       render: (_args: unknown, value: any) => [{ type: 'text', text: JSON.stringify(value) }],
     },
-    async execute() {
+    async execute(_args: unknown, exec: any) {
       logger.warn('desktop_restart invoked — launching detached watchdog; this turn will die')
+      // Record WHO asked so the next boot can wake this session (exec.agent
+      // is set by the agent loop, tools/src/index.ts:317).
+      if (exec?.agent?.id) {
+        try {
+          intent.write({ agentId: String(exec.agent.id), requestedAt: new Date().toISOString() })
+        } catch (err) { logger.warn('intent write failed:', (err as Error).message) }
+      }
       const { spawn } = await import('node:child_process')
       const child = spawn('python3', [paths.launcher], { detached: true, stdio: 'ignore' })
       child.unref()
