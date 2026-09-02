@@ -113,7 +113,12 @@ export function apply(ctx: any, config?: Config) {
       'code changes only load at boot). After the restart, read the status file to confirm.',
     parameters: {},
     output: {
-      schema: { type: 'object', additionalProperties: false, properties: { launched: { type: 'boolean', required: true } } },
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['launched'],
+        properties: { launched: { type: 'boolean' } },
+      },
       render: (_args: unknown, value: any) => [{ type: 'text', text: JSON.stringify(value) }],
     },
     async execute() {
